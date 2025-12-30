@@ -48,51 +48,62 @@
     let player = null;
     let isReady = false;
 
-    function currentVideoId() {
-        return getQueryParam("v");
-    }
-
-    // YouTube IFrame API callback
     function onYouTubeIframeAPIReady() {
-        const vid = currentVideoId();
-        if (!vid) return;
+        const videoId = getQueryParam("v");
+        if (!videoId) return;
 
         player = new YT.Player("player", {
             host: "https://www.youtube-nocookie.com",
-            videoId: vid,
+            videoId: videoId,
             width: "100%",
             height: "100%",
             playerVars: {
                 playsinline: 1,
 
-                // autoplay is ok if muted, otherwise iOS often blocks sound autoplay
                 autoplay: 1,
                 mute: 1,
 
-                // UI/branding minimization
+                loop: 1,
+                playlist: videoId,
+
                 controls: 0,
                 fs: 0,
                 modestbranding: 1,
                 iv_load_policy: 3,
                 rel: 0,
 
-                // allow JS control
                 enablejsapi: 1,
                 origin: window.location.origin
             },
             events: {
                 onReady: function () {
                     isReady = true;
+                    try {
+                        player.mute();
+                        player.playVideo();
+                    } catch (e) {}
+                },
 
-                    // Ensure mute is on by default
-                    try { player.mute(); } catch (e) {}
-                    try { player.playVideo(); } catch (e) {}
+                // Safety net: if ENDED fires, replay
+                onStateChange: function (event) {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        try {
+                            player.playVideo();
+                        } catch (e) {}
+                    }
                 }
             }
         });
     }
 
-    // Expose simple functions to native (Compose) via evaluateJavaScript/evaluateJavascript
+    window.setPlay = function (p) {
+        if (!isReady || !player) return;
+        try {
+            if (p) player.playVideo();
+            else player.pauseVideo();
+        } catch (e) {}
+    };
+
     window.setMuted = function (m) {
         if (!isReady || !player) return;
         try {
@@ -103,32 +114,7 @@
             }
         } catch (e) {}
     };
-
-    window.setPlay = function (p) {
-        if (!player) return;
-        try {
-            if (p) player.playVideo();
-            else player.pauseVideo();
-        } catch (e) {}
-    };
-
-    window.isPlaying = function () {
-        if (!player) return false;
-        try {
-            // 1 = playing (YT.PlayerState.PLAYING)
-            return player.getPlayerState && player.getPlayerState() === 1;
-        } catch (e) {
-            return false;
-        }
-    };
-
-    // Optional: switch video without reloading the whole page
-    window.setVideo = function (videoId) {
-        if (!isReady || !player) return;
-        try {
-            player.loadVideoById(videoId);
-        } catch (e) {}
-    };
 </script>
+
 </body>
 </html>
