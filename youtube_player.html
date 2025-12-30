@@ -6,13 +6,31 @@
         html, body {
             margin: 0;
             padding: 0;
-            background: black;
+            background: #000;
+            width: 100%;
             height: 100%;
             overflow: hidden;
         }
+
         #player {
             position: absolute;
             inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        /* Force the iframe to fill */
+        #player iframe {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            border: 0 !important;
+
+            /* Optional "reel cover" crop. Tune 1.05–1.25 if you want. */
+            transform: scale(1.12);
+            transform-origin: center;
         }
     </style>
 </head>
@@ -21,42 +39,86 @@
 <div id="player"></div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
-
 <script>
     function getQueryParam(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
     }
 
-    const videoId = getQueryParam("v");
-    let player;
+    let player = null;
+    let isReady = false;
 
+    function currentVideoId() {
+        return getQueryParam("v");
+    }
+
+    // YouTube IFrame API callback
     function onYouTubeIframeAPIReady() {
+        const vid = currentVideoId();
+        if (!vid) return;
+
         player = new YT.Player("player", {
-            videoId: videoId,
+            host: "https://www.youtube-nocookie.com",
+            videoId: vid,
+            width: "100%",
+            height: "100%",
             playerVars: {
                 playsinline: 1,
+
+                // autoplay is ok if muted, otherwise iOS often blocks sound autoplay
                 autoplay: 1,
                 mute: 1,
+
+                // UI/branding minimization
                 controls: 0,
-                rel: 0,
-                modestbranding: 1,
                 fs: 0,
+                modestbranding: 1,
                 iv_load_policy: 3,
+                rel: 0,
+
+                // allow JS control
                 enablejsapi: 1,
                 origin: window.location.origin
+            },
+            events: {
+                onReady: function () {
+                    isReady = true;
+
+                    // Ensure mute is on by default
+                    try { player.mute(); } catch (e) {}
+                    try { player.playVideo(); } catch (e) {}
+                }
             }
         });
     }
 
-    // Optional control hooks (future use)
-    window.pauseVideo = function () {
-        if (player) player.pauseVideo();
-    }
+    // Expose simple functions to native (Compose) via evaluateJavaScript/evaluateJavascript
+    window.setMuted = function (m) {
+        if (!isReady || !player) return;
+        try {
+            if (m) player.mute();
+            else {
+                player.unMute();
+                player.setVolume(100);
+            }
+        } catch (e) {}
+    };
 
-    window.playVideo = function () {
-        if (player) player.playVideo();
-    }
+    window.setPlay = function (p) {
+        if (!isReady || !player) return;
+        try {
+            if (p) player.playVideo();
+            else player.pauseVideo();
+        } catch (e) {}
+    };
+
+    // Optional: switch video without reloading the whole page
+    window.setVideo = function (videoId) {
+        if (!isReady || !player) return;
+        try {
+            player.loadVideoById(videoId);
+        } catch (e) {}
+    };
 </script>
 </body>
 </html>
