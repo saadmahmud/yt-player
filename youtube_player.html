@@ -105,11 +105,21 @@
     };
 
     window.setPlay = function (p) {
-        if (!isReady || !player) return;
+        if (!player) return;
         try {
             if (p) player.playVideo();
             else player.pauseVideo();
         } catch (e) {}
+    };
+
+    window.isPlaying = function () {
+        if (!player) return false;
+        try {
+            // 1 = playing (YT.PlayerState.PLAYING)
+            return player.getPlayerState && player.getPlayerState() === 1;
+        } catch (e) {
+            return false;
+        }
     };
 
     // Optional: switch video without reloading the whole page
