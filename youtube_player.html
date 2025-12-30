@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            height: 100%;
+            overflow: hidden;
+        }
+        #player {
+            position: absolute;
+            inset: 0;
+        }
+    </style>
+</head>
+
+<body>
+<div id="player"></div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    const videoId = getQueryParam("v");
+    let player;
+
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player("player", {
+            videoId: videoId,
+            playerVars: {
+                playsinline: 1,
+                autoplay: 1,
+                mute: 1,
+                controls: 0,
+                rel: 0,
+                modestbranding: 1,
+                fs: 0,
+                iv_load_policy: 3,
+                enablejsapi: 1,
+                origin: window.location.origin
+            }
+        });
+    }
+
+    // Optional control hooks (future use)
+    window.pauseVideo = function () {
+        if (player) player.pauseVideo();
+    }
+
+    window.playVideo = function () {
+        if (player) player.playVideo();
+    }
+</script>
+</body>
+</html>
